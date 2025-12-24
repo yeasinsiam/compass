@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "compass",
+    "slug": "compass",
+    "version": "1.0.0",
+    "scheme": "compass",
+    "platforms": ["ios", "android"],
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true,
+      "tsconfigPaths": true
+    },
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.yeasin.rahman.compass"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ad8ecf6e-cafe-4556-931d-8d218121826b"
+      }
+    }
+  }
+}
