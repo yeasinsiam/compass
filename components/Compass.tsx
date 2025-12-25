@@ -27,12 +27,10 @@ function shortestDeltaDegrees(fromDeg: number, toDeg: number) {
 }
 
 function headingFromMagnetometer({ x, y }: MagnetometerReading) {
-  // Basic magnetic heading. Note: device axis conventions differ slightly by platform.
-  // This mapping is a pragmatic default for Expo apps.
-  const angleRad = Math.atan2(y, x);
+  // Axis correction for typical phone orientation
+  const angleRad = Math.atan2(-x, y); // <- corrects for orientation
   const angleDeg = (angleRad * 180) / Math.PI;
-  // Rotate so that 0° ~= North.
-  return clampHeadingDegrees(angleDeg + 90);
+  return clampHeadingDegrees(angleDeg);
 }
 
 function cardinalFromHeading(deg: number) {
@@ -65,25 +63,30 @@ export function Compass() {
       setAvailable(isAvailable);
       if (!isAvailable) return;
 
-      // A bit smoother than default; adjust if you want snappier.
-      Magnetometer.setUpdateInterval(80);
+      Magnetometer.setUpdateInterval(100);
 
       sub = Magnetometer.addListener((data) => {
         const h = headingFromMagnetometer(data as MagnetometerReading);
-        setHeading(h);
 
-        const current = rotationDeg.value;
+        // Smooth rotation
+        const current = rotationDeg.value % 360;
         const delta = shortestDeltaDegrees(current, h);
         const next = current + delta;
+
         rotationDeg.value = withTiming(next, {
-          duration: 140,
+          duration: 150,
           easing: Easing.out(Easing.cubic),
         });
 
-        // Very lightweight “calibration” hint: if the field magnitude is weird, suggest a figure-8.
-        const mag = Math.sqrt(data.x * data.x + data.y * data.y + data.z * data.z);
-        if (mag < 15 || mag > 80) setAccuracyHint('Move phone in a figure‑8 to calibrate');
-        else setAccuracyHint(null);
+        setHeading(Math.round(h));
+
+        // Calibration hint
+        const mag = Math.sqrt(data.x ** 2 + data.y ** 2 + data.z ** 2);
+        if (mag < 25 || mag > 65) {
+          setAccuracyHint('Move phone in a figure‑8 to calibrate');
+        } else {
+          setAccuracyHint(null);
+        }
       });
     })();
 
@@ -92,13 +95,9 @@ export function Compass() {
     };
   }, [rotationDeg]);
 
-  const dialStyle = useAnimatedStyle(() => {
-    // Keep the needle fixed and rotate the dial so the current heading is at the top.
-    // Example: heading=90° (facing East) => rotate dial -90° so "E" sits at 12 o'clock.
-    return {
-      transform: [{ rotate: `${-rotationDeg.value}deg` }],
-    };
-  });
+  const dialStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${-rotationDeg.value}deg` }],
+  }));
 
   const pulseStyle = useAnimatedStyle(() => {
     const scale = 1 + 0.03 * pulse.value;
@@ -136,14 +135,11 @@ export function Compass() {
               style={pulseStyle}
             />
 
-            {/* Rotating dial (ring + markers) */}
             <Animated.View
               style={dialStyle}
-              className="absolute inset-0 items-center justify-center">
-              {/* Outer ring */}
+              className="absolute inset-0 items-center justify-center"
+            >
               <View className="absolute h-72 w-72 rounded-full border border-zinc-700/70 bg-zinc-950/40" />
-
-              {/* Cardinal markers */}
               <View className="absolute inset-0 items-center justify-start pt-4">
                 <Text className="text-sm font-semibold text-zinc-100">N</Text>
               </View>
@@ -158,7 +154,6 @@ export function Compass() {
               </View>
             </Animated.View>
 
-            {/* Fixed needle/indicator at the top */}
             <View className="absolute inset-0 items-center justify-start">
               <View className="mt-4 items-center">
                 <View className="h-4 w-4 rotate-45 rounded-sm bg-zinc-50" />
@@ -166,7 +161,6 @@ export function Compass() {
               </View>
             </View>
 
-            {/* Center cap */}
             <View className="absolute h-14 w-14 items-center justify-center rounded-full border border-zinc-700 bg-zinc-950">
               <View className="h-2 w-2 rounded-full bg-zinc-50" />
             </View>
